@@ -47,7 +47,7 @@ Un'applicazione Django completa per la gestione di una palestra locale con siste
 ### Setup
 ```bash
 # Clona il repository
-git clone <repository-url>
+git clone https://github.com/mehdighzal/Sistema-di-Gestione-Palestra.git
 cd LEVEL
 
 # Crea ambiente virtuale

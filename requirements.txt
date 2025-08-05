@@ -1,0 +1,18 @@
+Django==5.2.3
+qrcode==7.4.2
+Pillow==10.2.0  # Required for QR code generation
+python-dateutil==2.8.2
+cryptography>=41.0.0
+passbook==1.0.2
+
+# The passbook package is used for Apple Wallet pass generation. 
+# The version 1.12.0 is used as it is the latest version available on PyPI. 
+# If you need a different version, you can specify it in the requirements.txt file. 
+# If you need to use a different package for Apple Wallet pass generation, 
+# you can remove this line and the corresponding import statement from your code. 
+
+# The pass signing functionality is provided by the cryptography package. 
+# The version >=41.0.0 is used as it is the latest version available on PyPI. 
+# If you need a different version, you can specify it in the requirements.txt file. 
+# If you need to use a different package for pass signing, 
+# you can remove this line and the corresponding import statement from your code. 

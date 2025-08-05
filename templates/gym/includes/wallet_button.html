@@ -1,0 +1,59 @@
+{% if member.uuid %}
+<div class="wallet-buttons mt-3">
+    <div class="row">
+        <div class="col-md-6 mb-2">
+            <a href="{% url 'gym:generate_wallet_pass' member.uuid %}?type=apple" 
+               class="btn btn-dark btn-lg btn-block d-flex align-items-center justify-content-center">
+                <i class="fab fa-apple me-2"></i>
+                Aggiungi ad Apple Wallet
+            </a>
+        </div>
+        <div class="col-md-6 mb-2">
+            <a href="{% url 'gym:generate_wallet_pass' member.uuid %}?type=google" 
+               class="btn btn-dark btn-lg btn-block d-flex align-items-center justify-content-center"
+               onclick="saveToGoogleWallet(event)">
+                <i class="fab fa-google me-2"></i>
+                Aggiungi a Google Wallet
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function saveToGoogleWallet(event) {
+    event.preventDefault();
+    const url = event.target.href;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Errore: ' + data.error);
+                return;
+            }
+            
+            // Use Google Pay API to save the pass
+            if (window.google && google.payments && google.payments.pass) {
+                google.payments.pass.savePass(data)
+                    .then(() => {
+                        alert('Pass aggiunto con successo a Google Wallet!');
+                    })
+                    .catch(error => {
+                        console.error('Error saving pass:', error);
+                        alert('Errore durante il salvataggio del pass. Riprova più tardi.');
+                    });
+            } else {
+                // Fallback: open in new tab if Google Pay API is not available
+                window.open(url, '_blank');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Errore durante la generazione del pass. Riprova più tardi.');
+        });
+}
+</script>
+
+<!-- Include Google Pay API -->
+<script async src="https://pay.google.com/gp/p/js/pay.js"></script>
+{% endif %} 

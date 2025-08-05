@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}LEVEL - Home{% endblock %}
+
+{% block content %}
+<div class="text-center">
+    <h1 class="display-4 mb-5">Benvenuto in LEVEL</h1>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <a href="{% url 'gym:scan' %}" class="btn btn-primary btn-xl w-100">
+                <i class="fas fa-qrcode me-2"></i>Scansiona QR Code
+            </a>
+        </div>
+    </div>
+
+    {% if user.is_staff %}
+    <div class="mt-5">
+        <h2 class="h4 mb-3">Azioni Rapide</h2>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <a href="{% url 'admin:gym_member_add' %}" class="btn btn-success btn-lg w-100 mb-2">
+                    <i class="fas fa-user-plus me-2"></i>Nuovo Membro
+                </a>
+                <a href="{% url 'admin:gym_member_changelist' %}" class="btn btn-info btn-lg w-100">
+                    <i class="fas fa-users me-2"></i>Gestione Membri
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

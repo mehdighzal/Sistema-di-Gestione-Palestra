@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Aggiungi a Wallet{% endblock %}
+{% block content %}
+<div class="container text-center mt-5">
+    <h2>Aggiungi la tua tessera digitale</h2>
+    <p>Premi il pulsante per aggiungere la tessera a Apple Wallet o Google Wallet:</p>
+    <a href="{% url 'gym:generate_wallet_pass' member_uuid %}?type=apple" class="btn btn-dark btn-lg mb-3">
+        <img src="https://developer.apple.com/design/human-interface-guidelines/apple-pay/images/apple-pay-mark-apple-logo_2x.png" alt="Apple Wallet" style="height:1.5em;vertical-align:middle;"> Aggiungi a Apple Wallet
+    </a>
+    <br>
+    <a href="{% url 'gym:generate_wallet_pass' member_uuid %}?type=google" class="btn btn-success btn-lg">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/Google_Pay_Logo.svg" alt="Google Wallet" style="height:1.5em;vertical-align:middle;"> Aggiungi a Google Wallet
+    </a>
+</div>
+{% endblock %} 

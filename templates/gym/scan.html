@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}LEVEL - Scansione QR Code{% endblock %}
+
+{% block extra_css %}
+<style>
+    #reader {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .back-button {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+    }
+    .scan-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+    .scan-title {
+        margin-bottom: 2rem;
+    }
+    @media (max-width: 768px) {
+        .scan-container {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="position-relative">
+    <a href="{% url 'gym:home' %}" class="btn btn-secondary back-button">
+        <i class="fas fa-arrow-left me-2"></i>Torna indietro
+    </a>
+
+    <div class="scan-container">
+        <div class="text-center scan-title">
+            <h1 class="display-5">Scansione QR Code</h1>
+            <p class="lead">Inquadra il QR code del membro</p>
+        </div>
+
+        <div class="d-flex justify-content-center gap-3 mb-4">
+            <button id="checkin-btn" class="btn btn-success btn-lg">Check-in</button>
+            <button id="checkout-btn" class="btn btn-danger btn-lg">Check-out</button>
+        </div>
+        <div id="reader"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+    let html5QrcodeScanner = null;
+    let selectedAction = null;
+
+    document.getElementById('checkin-btn').onclick = function() {
+        selectedAction = 'checkin';
+        startScanner();
+    };
+    document.getElementById('checkout-btn').onclick = function() {
+        selectedAction = 'checkout';
+        startScanner();
+    };
+
+    function onScanSuccess(decodedText, decodedResult) {
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear();
+        }
+        if (selectedAction) {
+            window.location.href = `{% url 'gym:scan_result' %}?uuid=${encodeURIComponent(decodedText)}&action=${selectedAction}`;
+        }
+    }
+
+    function onScanFailure(error) {
+        // Handle scan failure silently
+        console.warn(`QR scan error: ${error}`);
+    }
+
+    function startScanner() {
+        document.getElementById('reader').innerHTML = '';
+        html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader",
+            { 
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            }
+        );
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    }
+</script>
+{% endblock %} 

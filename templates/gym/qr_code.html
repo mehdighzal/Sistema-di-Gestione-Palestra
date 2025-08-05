@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}LEVEL - QR Code di {{ member }}{% endblock %}
+
+{% block content %}
+<div class="text-center">
+    <h1 class="display-5 mb-4">QR Code di {{ member }}</h1>
+    
+    <div class="qr-container mb-4">
+        <img src="data:image/png;base64,{{ qr_image }}" 
+             alt="QR Code per {{ member }}"
+             class="img-fluid">
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Informazioni Membro</h5>
+            <p class="card-text">
+                <strong>Nome:</strong> {{ member.first_name }} {{ member.last_name }}<br>
+                <strong>Email:</strong> {{ member.email }}<br>
+                <strong>Telefono:</strong> {{ member.phone }}<br>
+                <strong>Abbonamento:</strong> {{ member.subscription_start|date:"d/m/Y" }} - {{ member.subscription_end|date:"d/m/Y" }}
+            </p>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-center gap-2">
+        <a href="{% url 'admin:gym_member_change' member.id %}" class="btn btn-primary">
+            <i class="fas fa-edit me-2"></i>Modifica Membro
+        </a>
+        <a href="{% url 'admin:gym_member_changelist' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Torna alla lista
+        </a>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+
+# Virtual environment
+venv/
+env/
+
+# Django
+*.pyc
+db.sqlite3
+staticfiles/
+media/
+
+# IDE
+.vscode/
+*.idea/
+
+# Secret settings (es. se hai usato file .env)
+.env

@@ -6,11 +6,13 @@ Un'applicazione Django completa per la gestione di una palestra locale con siste
 
 ### Back-office (Django Admin)
 - **Gestione Membri**: CRUD completo per utenti registrati
-- **Campi Membri**: Nome, cognome, email, telefono, date abbonamento, **date certificato medico**, tipo pagamento, numero ricevuta
+- **Campi Membri**: Nome, cognome, email, telefono, date abbonamento, **date certificato medico**, **foto**, tipo pagamento, numero ricevuta
 - **Ricerca e Filtri**: Ricerca per nome, email, stato abbonamento, **stato certificato medico**
 - **Visualizzazione QR**: Preview dei QR code generati automaticamente
 - **Stato Abbonamento**: Indicatori colorati per abbonamenti attivi/scaduti
 - **Stato Certificato Medico**: Indicatori colorati per certificati attivi/scaduti/non specificati
+- **Foto Membri**: Preview foto circolari + pulsante **📷 Scatta Foto Live**
+- **Download QR**: Pulsanti **📱 PNG** e **📄 PDF** (design professionale)
 - **Gestione Accessi**: Tracciamento completo di check-in/check-out con stato abbonamento
 
 ### Front-end (Interfaccia Tablet)
@@ -100,6 +102,7 @@ python manage.py runserver
 - subscription_end: DateField
 - medical_certificate_start: DateField (null, blank)
 - medical_certificate_end: DateField (null, blank)
+- photo: ImageField (null, blank)
 - qr_code_image: ImageField
 - payment_type: CharField (choices: carta/contanti)
 - receipt_number: CharField (50 chars)
@@ -157,6 +160,18 @@ python manage.py runserver
 - **Giorni Rimanenti**: Calcolo automatico scadenza certificato
 - **Accesso Bloccato**: Impossibile entrare senza certificato valido
 - **Messaggi Specifici**: Alert dedicati per certificato scaduto
+
+### Gestione Foto e QR
+- **Foto Live**: Webcam integrata per scattare foto direttamente dall'admin
+- **Identificazione Visiva**: Foto mostrata durante check-in per riconoscimento
+- **PDF Professionale**: Tessera completa con:
+  - Header colorato con logo palestra
+  - Foto del membro (80x80px con cornice)
+  - Informazioni complete (nome, contatti, abbonamento)
+  - Stato abbonamento colorato (🟢 ATTIVO / 🔴 SCADUTO)
+  - QR code grande centrato (250x250px)
+  - Footer con istruzioni
+- **Download Multiplo**: PNG per stampa semplice, PDF per tessera completa
 
 ### Statistiche e Report
 - **Durata Sessioni**: Calcolo automatico tempo di permanenza

@@ -4,6 +4,8 @@ Pillow==10.2.0  # Required for QR code generation
 python-dateutil==2.8.2
 cryptography>=41.0.0
 passbook==1.0.2
+applepassgenerator
+reportlab>=4.0.0
 
 # The passbook package is used for Apple Wallet pass generation. 
 # The version 1.12.0 is used as it is the latest version available on PyPI. 

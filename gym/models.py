@@ -28,6 +28,7 @@ class Member(models.Model):
     subscription_end = models.DateField(verbose_name="Data fine abbonamento")
     medical_certificate_start = models.DateField(verbose_name="Data inizio certificato medico", null=True, blank=True)
     medical_certificate_end = models.DateField(verbose_name="Data fine certificato medico", null=True, blank=True)
+    photo = models.ImageField(upload_to='member_photos/', null=True, blank=True, verbose_name="Foto del membro")
     qr_code_image = models.ImageField(
         upload_to='qr_codes/',
         null=True,

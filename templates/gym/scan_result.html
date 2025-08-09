@@ -25,6 +25,14 @@
         border-radius: 0.5rem;
         margin: 1rem 0;
     }
+    .member-photo {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #007bff;
+        margin-bottom: 1rem;
+    }
     .action-buttons {
         margin-top: 2rem;
     }
@@ -62,6 +70,9 @@
             <p class="mb-0">
                 <strong>Giorni rimanenti:</strong> {{ member.days_remaining }}
             </p>
+            {% if member.photo %}
+                <img src="{{ member.photo.url }}" alt="Foto del membro" class="member-photo">
+            {% endif %}
         </div>
         {% endif %}
     {% else %}

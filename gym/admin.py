@@ -5,14 +5,14 @@ from .models import Member, CheckInOut
 
 @admin.register(Member)
 class MemberAdmin(admin.ModelAdmin):
-    list_display = ('last_name', 'first_name', 'email', 'phone', 'subscription_status', 'days_remaining', 'medical_certificate_status_colored', 'medical_certificate_days_remaining', 'payment_type', 'receipt_number', 'qr_code_preview')
+    list_display = ('last_name', 'first_name', 'email', 'phone', 'subscription_status', 'days_remaining', 'medical_certificate_status_colored', 'medical_certificate_days_remaining', 'photo_preview', 'take_photo_button', 'payment_type', 'receipt_number', 'qr_code_preview', 'download_qr_buttons')
     list_filter = ('subscription_start', 'subscription_end', 'medical_certificate_start', 'medical_certificate_end', 'payment_type', 'created_at')
     search_fields = ('first_name', 'last_name', 'email', 'phone')
-    readonly_fields = ('uuid', 'qr_code_preview', 'created_at', 'updated_at')
+    readonly_fields = ('uuid', 'qr_code_preview', 'photo_preview', 'take_photo_button', 'download_qr_buttons', 'created_at', 'updated_at')
     
     fieldsets = (
         ('Informazioni Personali', {
-            'fields': ('first_name', 'last_name', 'email', 'phone')
+            'fields': ('first_name', 'last_name', 'email', 'phone', 'photo', 'photo_preview', 'take_photo_button')
         }),
         ('Abbonamento', {
             'fields': ('subscription_start', 'subscription_end', 'payment_type', 'receipt_number')
@@ -21,7 +21,7 @@ class MemberAdmin(admin.ModelAdmin):
             'fields': ('medical_certificate_start', 'medical_certificate_end')
         }),
         ('Sistema', {
-            'fields': ('uuid', 'qr_code_preview'),
+            'fields': ('uuid', 'qr_code_preview', 'download_qr_buttons'),
             'classes': ('collapse',)
         }),
         ('Metadati', {
@@ -57,6 +57,33 @@ class MemberAdmin(admin.ModelAdmin):
             color = 'orange'
         return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, status)
     medical_certificate_status_colored.short_description = 'Stato Certificato'
+
+    def photo_preview(self, obj):
+        """Mostra la foto del membro"""
+        if obj.photo:
+            return format_html('<img src="{}" width="60" height="60" style="border-radius: 50%; object-fit: cover;" />', obj.photo.url)
+        return "Nessuna foto"
+    photo_preview.short_description = 'Foto'
+
+    def take_photo_button(self, obj):
+        """Pulsante per scattare foto live"""
+        return format_html(
+            '<a href="/take-photo/{}/" class="button" target="_blank">📷 Scatta Foto</a>',
+            obj.pk
+        )
+    take_photo_button.short_description = 'Foto Live'
+
+    def download_qr_buttons(self, obj):
+        """Pulsanti per scaricare il QR code"""
+        if obj.uuid:
+            return format_html(
+                '<a href="{}?format=png" class="button" target="_blank">📱 PNG</a> '
+                '<a href="{}?format=pdf" class="button" target="_blank">📄 PDF</a>',
+                f'/download-qr/{obj.pk}/',
+                f'/download-qr/{obj.pk}/'
+            )
+        return "QR non disponibile"
+    download_qr_buttons.short_description = 'Download QR'
 
 @admin.register(CheckInOut)
 class CheckInOutAdmin(admin.ModelAdmin):

@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block title %}Scatta Foto - {{ member.first_name }} {{ member.last_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .photo-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    #video {
+        width: 100%;
+        max-width: 640px;
+        height: auto;
+        border: 3px solid #007bff;
+        border-radius: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    #canvas {
+        display: none;
+    }
+    
+    .preview-container {
+        margin: 1rem 0;
+    }
+    
+    .preview-image {
+        max-width: 300px;
+        height: auto;
+        border: 2px solid #28a745;
+        border-radius: 1rem;
+    }
+    
+    .btn-photo {
+        padding: 1rem 2rem;
+        font-size: 1.2rem;
+        margin: 0.5rem;
+        min-width: 150px;
+    }
+    
+    .member-info {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .status-message {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+        display: none;
+    }
+    
+    .status-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .status-error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="photo-container">
+    <div class="member-info">
+        <h2>Scatta Foto per {{ member.first_name }} {{ member.last_name }}</h2>
+        <p><strong>Email:</strong> {{ member.email }}</p>
+        <p><strong>Telefono:</strong> {{ member.phone }}</p>
+    </div>
+    
+    <div id="status-message" class="status-message"></div>
+    
+    <div id="camera-section">
+        <video id="video" autoplay></video>
+        <canvas id="canvas"></canvas>
+        
+        <div class="mt-3">
+            <button id="start-camera" class="btn btn-primary btn-photo">📷 Avvia Camera</button>
+            <button id="capture" class="btn btn-success btn-photo" disabled>📸 Scatta Foto</button>
+            <button id="stop-camera" class="btn btn-secondary btn-photo" disabled>⏹️ Ferma Camera</button>
+        </div>
+    </div>
+    
+    <div id="preview-section" class="preview-container" style="display: none;">
+        <h4>Anteprima Foto</h4>
+        <img id="preview" class="preview-image" alt="Anteprima foto">
+        
+        <div class="mt-3">
+            <button id="save-photo" class="btn btn-success btn-photo">💾 Salva Foto</button>
+            <button id="retake" class="btn btn-warning btn-photo">🔄 Rifai Foto</button>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <a href="/admin/gym/member/{{ member.id }}/change/" class="btn btn-secondary">← Torna al Membro</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const preview = document.getElementById('preview');
+const startBtn = document.getElementById('start-camera');
+const captureBtn = document.getElementById('capture');
+const stopBtn = document.getElementById('stop-camera');
+const saveBtn = document.getElementById('save-photo');
+const retakeBtn = document.getElementById('retake');
+const cameraSection = document.getElementById('camera-section');
+const previewSection = document.getElementById('preview-section');
+const statusMessage = document.getElementById('status-message');
+
+let stream = null;
+let capturedImageData = null;
+
+function showStatus(message, isError = false) {
+    statusMessage.textContent = message;
+    statusMessage.className = `status-message ${isError ? 'status-error' : 'status-success'}`;
+    statusMessage.style.display = 'block';
+    
+    setTimeout(() => {
+        statusMessage.style.display = 'none';
+    }, 3000);
+}
+
+startBtn.addEventListener('click', async () => {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: 640, 
+                height: 480,
+                facingMode: 'user'
+            } 
+        });
+        video.srcObject = stream;
+        
+        startBtn.disabled = true;
+        captureBtn.disabled = false;
+        stopBtn.disabled = false;
+        
+        showStatus('Camera avviata con successo!');
+    } catch (err) {
+        console.error('Errore accesso camera:', err);
+        showStatus('Errore: Impossibile accedere alla camera', true);
+    }
+});
+
+captureBtn.addEventListener('click', () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    
+    capturedImageData = canvas.toDataURL('image/png');
+    preview.src = capturedImageData;
+    
+    cameraSection.style.display = 'none';
+    previewSection.style.display = 'block';
+    
+    showStatus('Foto scattata! Controlla l\'anteprima');
+});
+
+stopBtn.addEventListener('click', () => {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+        stream = null;
+    }
+    
+    startBtn.disabled = false;
+    captureBtn.disabled = true;
+    stopBtn.disabled = true;
+    
+    showStatus('Camera fermata');
+});
+
+retakeBtn.addEventListener('click', () => {
+    cameraSection.style.display = 'block';
+    previewSection.style.display = 'none';
+    capturedImageData = null;
+});
+
+saveBtn.addEventListener('click', async () => {
+    if (!capturedImageData) {
+        showStatus('Nessuna foto da salvare', true);
+        return;
+    }
+    
+    try {
+        const formData = new FormData();
+        formData.append('image_data', capturedImageData);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        
+        const response = await fetch('/save-photo/{{ member.id }}/', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatus('Foto salvata con successo!');
+            setTimeout(() => {
+                window.close();
+            }, 2000);
+        } else {
+            showStatus('Errore nel salvare la foto: ' + result.message, true);
+        }
+    } catch (err) {
+        console.error('Errore salvataggio:', err);
+        showStatus('Errore di rete durante il salvataggio', true);
+    }
+});
+
+// Pulisci al chiudere la pagina
+window.addEventListener('beforeunload', () => {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+});
+</script>
+{% endblock %} 

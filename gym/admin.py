@@ -5,11 +5,11 @@ from .models import Member, CheckInOut
 
 @admin.register(Member)
 class MemberAdmin(admin.ModelAdmin):
-    list_display = ('last_name', 'first_name', 'email', 'phone', 
-                   'subscription_status', 'days_remaining', 'payment_type', 'receipt_number', 'qr_code_preview')
-    list_filter = ('subscription_start', 'subscription_end')
+    list_display = ('last_name', 'first_name', 'email', 'phone', 'subscription_status', 'days_remaining', 'medical_certificate_status_colored', 'medical_certificate_days_remaining', 'payment_type', 'receipt_number', 'qr_code_preview')
+    list_filter = ('subscription_start', 'subscription_end', 'medical_certificate_start', 'medical_certificate_end', 'payment_type', 'created_at')
     search_fields = ('first_name', 'last_name', 'email', 'phone')
     readonly_fields = ('uuid', 'qr_code_preview', 'created_at', 'updated_at')
+    
     fieldsets = (
         ('Informazioni Personali', {
             'fields': ('first_name', 'last_name', 'email', 'phone')
@@ -17,11 +17,14 @@ class MemberAdmin(admin.ModelAdmin):
         ('Abbonamento', {
             'fields': ('subscription_start', 'subscription_end', 'payment_type', 'receipt_number')
         }),
-        ('QR Code', {
-            'fields': ('uuid', 'qr_code_image', 'qr_code_preview'),
+        ('Certificato Medico', {
+            'fields': ('medical_certificate_start', 'medical_certificate_end')
+        }),
+        ('Sistema', {
+            'fields': ('uuid', 'qr_code_preview'),
             'classes': ('collapse',)
         }),
-        ('Informazioni Sistema', {
+        ('Metadati', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
@@ -39,12 +42,21 @@ class MemberAdmin(admin.ModelAdmin):
 
     def qr_code_preview(self, obj):
         if obj.qr_code_image:
-            return format_html(
-                '<img src="{}" style="max-height: 50px;"/>',
-                obj.qr_code_image.url
-            )
-        return "QR Code non generato"
-    qr_code_preview.short_description = "QR Code"
+            return format_html('<img src="{}" width="100" height="100" />', obj.qr_code_image.url)
+        return "Nessun QR Code"
+    qr_code_preview.short_description = 'QR Code'
+
+    def medical_certificate_status_colored(self, obj):
+        """Mostra lo stato del certificato medico con colori"""
+        status = obj.medical_certificate_status
+        if status == "Attivo":
+            color = 'green'
+        elif status == "Scaduto":
+            color = 'red'
+        else:
+            color = 'orange'
+        return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, status)
+    medical_certificate_status_colored.short_description = 'Stato Certificato'
 
 @admin.register(CheckInOut)
 class CheckInOutAdmin(admin.ModelAdmin):

@@ -26,6 +26,8 @@ class Member(models.Model):
     )
     subscription_start = models.DateField(verbose_name="Data inizio abbonamento")
     subscription_end = models.DateField(verbose_name="Data fine abbonamento")
+    medical_certificate_start = models.DateField(verbose_name="Data inizio certificato medico", null=True, blank=True)
+    medical_certificate_end = models.DateField(verbose_name="Data fine certificato medico", null=True, blank=True)
     qr_code_image = models.ImageField(
         upload_to='qr_codes/',
         null=True,
@@ -94,10 +96,40 @@ class Member(models.Model):
     @property
     def days_remaining(self):
         """Calculate days remaining in subscription"""
+        if self.subscription_end:
+            today = timezone.now().date()
+            delta = self.subscription_end - today
+            return max(0, delta.days)
+        return 0
+
+    @property
+    def is_medical_certificate_active(self):
+        """Verifica se il certificato medico è attivo"""
+        if not self.medical_certificate_end:
+            return False
         today = timezone.now().date()
-        if today > self.subscription_end:
-            return 0
-        return (self.subscription_end - today).days
+        return today <= self.medical_certificate_end
+
+    @property
+    def medical_certificate_days_remaining(self):
+        """Calcola i giorni rimanenti del certificato medico"""
+        if self.medical_certificate_end:
+            today = timezone.now().date()
+            delta = self.medical_certificate_end - today
+            return max(0, delta.days)
+        return 0
+
+    @property
+    def medical_certificate_status(self):
+        """Restituisce lo stato del certificato medico"""
+        if not self.medical_certificate_end:
+            return "Non specificato"
+        return "Attivo" if self.is_medical_certificate_active else "Scaduto"
+
+    @property
+    def can_access_gym(self):
+        """Verifica se il membro può accedere alla palestra (abbonamento E certificato validi)"""
+        return self.is_active and self.is_medical_certificate_active
 
 @receiver(pre_save, sender=Member)
 def generate_member_qr_code(sender, instance, **kwargs):

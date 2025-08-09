@@ -29,7 +29,7 @@ def scan_result(request):
             member = Member.objects.get(uuid=member_uuid)
             context['member'] = member
             if action == 'checkin':
-                # Check subscription validity
+                # Verifica abbonamento
                 if not member.is_active:
                     CheckInOut.objects.create(
                         member=member,
@@ -37,16 +37,29 @@ def scan_result(request):
                     )
                     context['status'] = 'error'
                     context['message'] = 'Abbonamento scaduto: non hai accesso.'
+                # Verifica certificato medico
+                elif not member.is_medical_certificate_active:
+                    CheckInOut.objects.create(
+                        member=member,
+                        subscription_status='attivo'
+                    )
+                    context['status'] = 'error'
+                    context['message'] = 'Certificato medico scaduto: non puoi entrare.'
+                # Abbonamento e certificato validi
                 else:
-                    # Check if already checked in
-                    active_access = CheckInOut.objects.filter(member=member, check_out__isnull=True).order_by('-check_in').first()
+                    # Verifica se ha già fatto check-in
+                    active_access = CheckInOut.objects.filter(
+                        member=member, 
+                        check_out__isnull=True
+                    ).order_by('-check_in').first()
+                    
                     if active_access and active_access.is_active:
                         context['status'] = 'success'
                         context['message'] = 'Hai già fatto il check-in!'
                     else:
                         CheckInOut.objects.create(
                             member=member,
-                            subscription_status='attivo' if member.is_active else 'scaduto'
+                            subscription_status='attivo'
                         )
                         context['status'] = 'success'
                         context['message'] = 'Check-in effettuato con successo!'

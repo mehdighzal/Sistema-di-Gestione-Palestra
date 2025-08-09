@@ -6,18 +6,20 @@ Un'applicazione Django completa per la gestione di una palestra locale con siste
 
 ### Back-office (Django Admin)
 - **Gestione Membri**: CRUD completo per utenti registrati
-- **Campi Membri**: Nome, cognome, email, telefono, date abbonamento, tipo pagamento, numero ricevuta
-- **Ricerca e Filtri**: Ricerca per nome, email, stato abbonamento
+- **Campi Membri**: Nome, cognome, email, telefono, date abbonamento, **date certificato medico**, tipo pagamento, numero ricevuta
+- **Ricerca e Filtri**: Ricerca per nome, email, stato abbonamento, **stato certificato medico**
 - **Visualizzazione QR**: Preview dei QR code generati automaticamente
 - **Stato Abbonamento**: Indicatori colorati per abbonamenti attivi/scaduti
+- **Stato Certificato Medico**: Indicatori colorati per certificati attivi/scaduti/non specificati
 - **Gestione Accessi**: Tracciamento completo di check-in/check-out con stato abbonamento
 
 ### Front-end (Interfaccia Tablet)
 - **Scansione QR**: Interfaccia touch-friendly per scansione QR code
 - **Check-in/Check-out**: Pulsanti separati per le due operazioni
 - **Messaggi Dinamici**: 
-  - ✅ Verde: "Benvenuto, buon allenamento!" (QR valido + abbonamento attivo)
+  - ✅ Verde: "Benvenuto, buon allenamento!" (QR valido + abbonamento attivo + certificato valido)
   - ❌ Rosso: "Abbonamento scaduto: non hai accesso." (QR valido + abbonamento scaduto)
+  - ❌ Rosso: "Certificato medico scaduto: non puoi entrare." (QR valido + certificato scaduto)
   - ⚠️ Errore: "Utente non trovato" (QR non riconosciuto)
 - **Auto-redirect**: Ritorno automatico alla home dopo 20 secondi
 - **Modalità Kiosk**: Ottimizzata per tablet a schermo intero
@@ -96,6 +98,8 @@ python manage.py runserver
 - phone: CharField (15 chars)
 - subscription_start: DateField
 - subscription_end: DateField
+- medical_certificate_start: DateField (null, blank)
+- medical_certificate_end: DateField (null, blank)
 - qr_code_image: ImageField
 - payment_type: CharField (choices: carta/contanti)
 - receipt_number: CharField (50 chars)
@@ -146,6 +150,13 @@ python manage.py runserver
 - **Registrazione Tentativi**: Anche accessi con abbonamento scaduto vengono registrati
 - **Stato Colorato**: Indicatori visivi in admin per stato abbonamento
 - **Messaggi Chiari**: Feedback immediato all'utente
+
+### Gestione Certificato Medico
+- **Controllo Doppio**: Verifica sia abbonamento che certificato medico al check-in
+- **Stati Visuali**: Verde (attivo), Rosso (scaduto), Arancione (non specificato)
+- **Giorni Rimanenti**: Calcolo automatico scadenza certificato
+- **Accesso Bloccato**: Impossibile entrare senza certificato valido
+- **Messaggi Specifici**: Alert dedicati per certificato scaduto
 
 ### Statistiche e Report
 - **Durata Sessioni**: Calcolo automatico tempo di permanenza

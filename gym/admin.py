@@ -67,9 +67,12 @@ class MemberAdmin(admin.ModelAdmin):
 
     def take_photo_button(self, obj):
         """Pulsante per scattare foto live"""
+        if not obj.pk:
+            return "Salva il membro prima di scattare una foto"
+        url = reverse('gym:take_photo', kwargs={'member_id': obj.pk})
         return format_html(
-            '<a href="/take-photo/{}/" class="button" target="_blank">📷 Scatta Foto</a>',
-            obj.pk
+            '<a href="{}" class="button" target="_blank">📷 Scatta Foto</a>',
+            url
         )
     take_photo_button.short_description = 'Foto Live'
 

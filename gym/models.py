@@ -52,6 +52,12 @@ class Member(models.Model):
         blank=True,
         verbose_name="Numero Ricevuta"
     )
+    # Quota di iscrizione annuale (20€): valida fino a questa data
+    registration_fee_paid_until = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Iscrizione pagata fino al"
+    )
 
     class Meta:
         verbose_name = "Membro"
@@ -129,8 +135,28 @@ class Member(models.Model):
 
     @property
     def can_access_gym(self):
-        """Verifica se il membro può accedere alla palestra (abbonamento E certificato validi)"""
-        return self.is_active and self.is_medical_certificate_active
+        """Verifica se il membro può accedere alla palestra (abbonamento, certificato e iscrizione validi)"""
+        return self.is_active and self.is_medical_certificate_active and self.is_registration_fee_active
+
+    # =========================
+    # Iscrizione annuale (20€)
+    # =========================
+    @property
+    def registration_fee_amount_eur(self):
+        return 20
+
+    @property
+    def is_registration_fee_active(self):
+        if not self.registration_fee_paid_until:
+            return False
+        today = timezone.now().date()
+        return today <= self.registration_fee_paid_until
+
+    @property
+    def registration_fee_status(self):
+        if not self.registration_fee_paid_until:
+            return "Non pagata"
+        return "Attiva" if self.is_registration_fee_active else "Scaduta"
 
 @receiver(pre_save, sender=Member)
 def generate_member_qr_code(sender, instance, **kwargs):

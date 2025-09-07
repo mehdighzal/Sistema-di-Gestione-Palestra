@@ -5,7 +5,7 @@ from .models import Member, CheckInOut
 
 @admin.register(Member)
 class MemberAdmin(admin.ModelAdmin):
-    list_display = ('last_name', 'first_name', 'email', 'phone', 'subscription_status', 'days_remaining', 'medical_certificate_status_colored', 'medical_certificate_days_remaining', 'photo_preview', 'take_photo_button', 'payment_type', 'receipt_number', 'qr_code_preview', 'download_qr_buttons')
+    list_display = ('last_name', 'first_name', 'email', 'phone', 'subscription_status', 'days_remaining', 'medical_certificate_status_colored', 'medical_certificate_days_remaining', 'registration_fee_status_colored', 'registration_fee_paid_until', 'photo_preview', 'take_photo_button', 'payment_type', 'receipt_number', 'qr_code_preview', 'download_qr_buttons')
     list_filter = ('subscription_start', 'subscription_end', 'medical_certificate_start', 'medical_certificate_end', 'payment_type', 'created_at')
     search_fields = ('first_name', 'last_name', 'email', 'phone')
     readonly_fields = ('uuid', 'qr_code_preview', 'photo_preview', 'take_photo_button', 'download_qr_buttons', 'created_at', 'updated_at')
@@ -19,6 +19,9 @@ class MemberAdmin(admin.ModelAdmin):
         }),
         ('Certificato Medico', {
             'fields': ('medical_certificate_start', 'medical_certificate_end')
+        }),
+        ('Iscrizione annuale (20€)', {
+            'fields': ('registration_fee_paid_until',)
         }),
         ('Sistema', {
             'fields': ('uuid', 'qr_code_preview', 'download_qr_buttons'),
@@ -57,6 +60,17 @@ class MemberAdmin(admin.ModelAdmin):
             color = 'orange'
         return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, status)
     medical_certificate_status_colored.short_description = 'Stato Certificato'
+
+    def registration_fee_status_colored(self, obj):
+        status = obj.registration_fee_status
+        if status == 'Attiva':
+            color = 'green'
+        elif status == 'Scaduta':
+            color = 'red'
+        else:
+            color = 'orange'
+        return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, status)
+    registration_fee_status_colored.short_description = 'Iscrizione (20€)'
 
     def photo_preview(self, obj):
         """Mostra la foto del membro"""

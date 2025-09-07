@@ -54,6 +54,5 @@ function saveToGoogleWallet(event) {
 }
 </script>
 
-<!-- Include Google Pay API -->
-<script async src="https://pay.google.com/gp/p/js/pay.js"></script>
+{# Removed external Google Pay script to avoid internet dependency. If needed, bundle it locally. #}
 {% endif %} 

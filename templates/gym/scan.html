@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}LEVEL - Scansione QR Code{% endblock %}
 
@@ -52,7 +53,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="{% static 'vendor/html5-qrcode/html5-qrcode.min.js' %}"></script>
 <script>
     let html5QrcodeScanner = null;
     let selectedAction = null;

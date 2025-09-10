@@ -105,7 +105,7 @@ class MemberAdmin(admin.ModelAdmin):
     def send_qr_email_button(self, obj):
         if obj.email:
             return format_html(
-                '<a href="{}" class="button">✉️ Invia QR via Email</a>',
+                '<a href="{}" class="button">✉️ Invia QR + Tessera</a>',
                 f'/send-qr-email/{obj.pk}/'
             )
         return "Email non disponibile"

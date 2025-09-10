@@ -367,7 +367,7 @@ def save_photo(request, member_id):
 
 @staff_member_required
 def send_qr_email(request, member_id):
-    """Invia una mail al membro con il suo QR code in allegato (PNG)."""
+    """Invia una mail al membro con il suo QR code PNG e la tessera PDF in allegato."""
     member = get_object_or_404(Member, id=member_id)
 
     try:
@@ -380,11 +380,13 @@ def send_qr_email(request, member_id):
             messages.error(request, "Il membro non ha un'email valida.")
             return redirect(reverse('admin:gym_member_change', args=[member.id]))
 
-        subject = "Il tuo QR code - Palestra LEVEL"
+        subject = "La tua tessera e QR code - Palestra LEVEL"
         body = (
             f"Ciao {member.first_name},\n\n"
-            "in allegato trovi il tuo QR code personale per l'accesso in palestra. "
-            "Conservalo e mostracelo all'ingresso.\n\n"
+            "in allegato trovi:\n"
+            "- Il tuo QR code personale (PNG) per l'accesso rapido\n"
+            "- La tua tessera completa (PDF) con tutte le informazioni\n\n"
+            "Conserva entrambi i file e porta la tessera PDF stampata o il QR code sul telefono.\n\n"
             "A presto,\nLEVEL"
         )
 
@@ -403,8 +405,148 @@ def send_qr_email(request, member_id):
                 mimetype='image/png'
             )
 
+        # Genera e allega la tessera PDF
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.utils import ImageReader
+        import io
+        
+        # Crea PDF della tessera
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+        
+        # Colori
+        primary_color = (0, 0.3, 0.6)  # Blu scuro
+        secondary_color = (0.9, 0.9, 0.9)  # Grigio chiaro
+        text_color = (0.2, 0.2, 0.2)  # Grigio scuro
+        
+        # Header con sfondo colorato
+        p.setFillColorRGB(*primary_color)
+        p.rect(0, height - 100, width, 100, fill=True, stroke=False)
+        
+        # Titolo principale
+        p.setFillColorRGB(1, 1, 1)  # Bianco
+        p.setFont("Helvetica-Bold", 24)
+        p.drawCentredString(width/2, height - 40, "TESSERA PALESTRA LEVEL")
+        
+        p.setFont("Helvetica", 14)
+        p.drawCentredString(width/2, height - 65, "Codice QR Personale")
+        
+        # Sezione informazioni membro
+        y_start = height - 140
+        
+        # Box informazioni con sfondo (più alto per includere certificato medico)
+        p.setFillColorRGB(*secondary_color)
+        p.rect(40, y_start - 160, width - 80, 160, fill=True, stroke=True)
+        
+        # Foto del membro (se presente)
+        photo_x = 60
+        photo_y = y_start - 100
+        if member.photo:
+            try:
+                photo_image = ImageReader(member.photo.path)
+                p.drawImage(photo_image, photo_x, photo_y, width=80, height=100)
+            except:
+                # Placeholder foto
+                p.setFillColorRGB(*secondary_color)
+                p.rect(photo_x, photo_y, 80, 100, fill=True, stroke=True)
+                p.setFillColorRGB(*text_color)
+                p.setFont("Helvetica", 10)
+                p.drawCentredString(photo_x + 40, photo_y + 50, "FOTO")
+        
+        # Informazioni membro
+        info_x = 160
+        p.setFillColorRGB(*text_color)
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(info_x, y_start - 20, f"{member.first_name} {member.last_name}")
+        
+        p.setFont("Helvetica", 12)
+        p.drawString(info_x, y_start - 40, f"ID: {member.uuid}")
+        p.drawString(info_x, y_start - 60, f"Email: {member.email}")
+        p.drawString(info_x, y_start - 80, f"Telefono: {member.phone}")
+        
+        # Data di nascita
+        if member.date_of_birth:
+            p.drawString(info_x, y_start - 100, f"Nato il: {member.date_of_birth.strftime('%d/%m/%Y')}")
+        
+        # Certificato medico
+        cert_status = "✓ Presente" if member.medical_certificate else "✗ Non presente"
+        cert_color = (0, 0.6, 0) if member.medical_certificate else (0.8, 0, 0)
+        p.setFillColorRGB(*cert_color)
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(info_x, y_start - 120, f"Certificato Medico: {cert_status}")
+        
+        # Data scadenza abbonamento
+        if member.subscription_end_date:
+            p.setFillColorRGB(*text_color)
+            p.setFont("Helvetica", 12)
+            p.drawString(info_x, y_start - 140, f"Abbonamento valido fino al: {member.subscription_end_date.strftime('%d/%m/%Y')}")
+        
+        # Sezione QR Code
+        qr_section_y = y_start - 200
+        
+        # Titolo sezione QR
+        p.setFillColorRGB(*primary_color)
+        p.setFont("Helvetica-Bold", 16)
+        p.drawCentredString(width/2, qr_section_y, "CODICE QR PER CHECK-IN")
+        
+        # QR Code grande centrato
+        if member.qr_code_image:
+            qr_size = 250  # QR code più grande
+            qr_x = (width - qr_size) / 2  # Centrato
+            qr_y = qr_section_y - qr_size - 30
+            
+            try:
+                qr_image = ImageReader(member.qr_code_image.path)
+                p.drawImage(qr_image, qr_x, qr_y, width=qr_size, height=qr_size)
+                
+                # Cornice QR
+                p.setStrokeColorRGB(*primary_color)
+                p.setLineWidth(3)
+                p.rect(qr_x - 5, qr_y - 5, qr_size + 10, qr_size + 10, fill=False, stroke=True)
+            except:
+                # Placeholder QR
+                p.setFillColorRGB(*secondary_color)
+                p.rect(qr_x, qr_y, qr_size, qr_size, fill=True, stroke=True)
+                p.setFillColorRGB(*text_color)
+                p.setFont("Helvetica-Bold", 16)
+                p.drawCentredString(qr_x + qr_size/2, qr_y + qr_size/2, "QR CODE")
+        
+        # UUID sotto il QR
+        p.setFillColorRGB(*text_color)
+        p.setFont("Helvetica", 10)
+        p.drawCentredString(width/2, qr_y - 20, f"ID: {member.uuid}")
+        
+        # Footer
+        footer_y = 50
+        p.setFillColorRGB(*primary_color)
+        p.setFont("Helvetica-Bold", 12)
+        p.drawCentredString(width/2, footer_y + 20, "LEVEL - Sistema di Gestione Palestra")
+        
+        p.setFont("Helvetica", 10)
+        p.drawCentredString(width/2, footer_y, "Presenta questo QR code per l'accesso alla palestra")
+        
+        # Data di generazione
+        from datetime import datetime
+        p.setFont("Helvetica", 8)
+        p.drawString(40, 20, f"Generato il: {datetime.now().strftime('%d/%m/%Y alle %H:%M')}")
+        
+        p.showPage()
+        p.save()
+        
+        pdf_data = buffer.getvalue()
+        buffer.close()
+        
+        # Allega la tessera PDF
+        email.attach(
+            filename=f"tessera_{member.last_name}_{member.first_name}.pdf",
+            content=pdf_data,
+            mimetype='application/pdf'
+        )
+
         email.send(fail_silently=False)
-        messages.success(request, f"Email inviata a {member.email}.")
+        messages.success(request, f"Email inviata a {member.email} con QR code e tessera PDF.")
     except Exception as exc:
         messages.error(request, f"Errore nell'invio dell'email: {exc}")
 

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.contrib import messages
-from .models import Member, CheckInOut
+from .models import Member, CheckInOut, SalaMember, SalaCheckInOut
 import qrcode
 import io
 import base64
@@ -33,46 +33,83 @@ def scan_result(request):
     context = {}
     if member_uuid:
         try:
-            member = Member.objects.get(uuid=member_uuid)
+            # Cerca prima nei membri palestra
+            try:
+                member = Member.objects.get(uuid=member_uuid)
+                member_type = 'palestra'
+            except Member.DoesNotExist:
+                # Se non trovato, cerca nei membri sala
+                member = SalaMember.objects.get(uuid=member_uuid)
+                member_type = 'sala'
+            
             context['member'] = member
+            context['member_type'] = member_type
             if action == 'checkin':
                 # Verifica abbonamento
                 if not member.is_active:
-                    CheckInOut.objects.create(
-                        member=member,
-                        subscription_status='scaduto'
-                    )
+                    if member_type == 'palestra':
+                        CheckInOut.objects.create(
+                            member=member,
+                            subscription_status='scaduto'
+                        )
+                    else:  # sala
+                        SalaCheckInOut.objects.create(
+                            member=member,
+                            subscription_status='scaduto'
+                        )
                     context['status'] = 'error'
                     context['message'] = 'Abbonamento scaduto: non hai accesso.'
                 # Verifica certificato medico
                 elif not member.is_medical_certificate_active:
-                    CheckInOut.objects.create(
-                        member=member,
-                        subscription_status='attivo'
-                    )
+                    if member_type == 'palestra':
+                        CheckInOut.objects.create(
+                            member=member,
+                            subscription_status='attivo'
+                        )
+                    else:  # sala
+                        SalaCheckInOut.objects.create(
+                            member=member,
+                            subscription_status='attivo'
+                        )
                     context['status'] = 'error'
                     context['message'] = 'Certificato medico scaduto: non puoi entrare.'
                 # Abbonamento e certificato validi
                 else:
                     # Verifica se ha già fatto check-in
-                    active_access = CheckInOut.objects.filter(
-                        member=member, 
-                        check_out__isnull=True
-                    ).order_by('-check_in').first()
+                    if member_type == 'palestra':
+                        active_access = CheckInOut.objects.filter(
+                            member=member, 
+                            check_out__isnull=True
+                        ).order_by('-check_in').first()
+                    else:  # sala
+                        active_access = SalaCheckInOut.objects.filter(
+                            member=member, 
+                            check_out__isnull=True
+                        ).order_by('-check_in').first()
                     
                     if active_access and active_access.is_active:
                         context['status'] = 'success'
                         context['message'] = 'Hai già fatto il check-in!'
                     else:
-                        CheckInOut.objects.create(
-                            member=member,
-                            subscription_status='attivo'
-                        )
+                        if member_type == 'palestra':
+                            CheckInOut.objects.create(
+                                member=member,
+                                subscription_status='attivo'
+                            )
+                        else:  # sala
+                            SalaCheckInOut.objects.create(
+                                member=member,
+                                subscription_status='attivo'
+                            )
                         context['status'] = 'success'
                         context['message'] = 'Check-in effettuato con successo!'
             elif action == 'checkout':
                 # Find last active access
-                active_access = CheckInOut.objects.filter(member=member, check_out__isnull=True).order_by('-check_in').first()
+                if member_type == 'palestra':
+                    active_access = CheckInOut.objects.filter(member=member, check_out__isnull=True).order_by('-check_in').first()
+                else:  # sala
+                    active_access = SalaCheckInOut.objects.filter(member=member, check_out__isnull=True).order_by('-check_in').first()
+                
                 if active_access and active_access.is_active:
                     active_access.check_out = timezone.now()
                     active_access.save()
@@ -82,7 +119,7 @@ def scan_result(request):
                     context['message'] = 'Devi fare il check-in prima di poter fare il check-out.'
             else:
                 context['member_uuid'] = member.uuid
-        except Member.DoesNotExist:
+        except (Member.DoesNotExist, SalaMember.DoesNotExist):
             context['status'] = 'error'
             context['message'] = 'Membro non trovato.'
     else:
@@ -551,3 +588,420 @@ def send_qr_email(request, member_id):
         messages.error(request, f"Errore nell'invio dell'email: {exc}")
 
     return redirect(reverse('admin:gym_member_change', args=[member.id]))
+
+# =========================
+# FUNZIONI PER MEMBRI DI SALA
+# =========================
+
+def generate_sala_qr(request, member_id):
+    """Generate QR code for a sala member"""
+    member = get_object_or_404(SalaMember, id=member_id)
+    
+    # Generate QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(member.qr_code)
+    qr.make(fit=True)
+    
+    # Create QR code image
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Convert to base64 for display
+    buffer = io.BytesIO()
+    img.save(buffer, format='PNG')
+    qr_image = base64.b64encode(buffer.getvalue()).decode()
+    
+    context = {
+        'member': member,
+        'qr_image': qr_image
+    }
+    
+    return render(request, "gym/sala_qr_code.html", context)
+
+@staff_member_required
+def download_sala_qr_code(request, member_id):
+    """Download QR code in PNG or PDF format for sala member"""
+    member = get_object_or_404(SalaMember, id=member_id)
+    format_type = request.GET.get('format', 'png').lower()
+    
+    if not member.qr_code_image:
+        # Generate QR code if not exists
+        member.generate_qr_code()
+        member.save()
+    
+    if format_type == 'pdf':
+        # Create PDF with QR code
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="tessera_sala_{member.last_name}_{member.first_name}.pdf"'
+        
+        # Create PDF
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+        
+        # Colori per sala (rosso)
+        primary_color = (0.8, 0.2, 0.2)  # Rosso per sala
+        secondary_color = (0.9, 0.9, 0.9)  # Grigio chiaro
+        text_color = (0.2, 0.2, 0.2)  # Grigio scuro
+        
+        # Header con sfondo colorato
+        p.setFillColorRGB(*primary_color)
+        p.rect(0, height - 100, width, 100, fill=True, stroke=False)
+        
+        # Titolo principale
+        p.setFillColorRGB(1, 1, 1)  # Bianco
+        p.setFont("Helvetica-Bold", 24)
+        p.drawCentredString(width/2, height - 40, "TESSERA SALA LEVEL")
+        
+        p.setFont("Helvetica", 14)
+        p.drawCentredString(width/2, height - 65, "Codice QR Personale")
+        
+        # Sezione informazioni membro
+        y_start = height - 140
+        
+        # Box informazioni con sfondo
+        p.setFillColorRGB(*secondary_color)
+        p.rect(40, y_start - 160, width - 80, 160, fill=True, stroke=True)
+        
+        # Foto del membro (se presente)
+        photo_x = 60
+        photo_y = y_start - 100
+        if member.photo:
+            try:
+                photo_image = ImageReader(member.photo.path)
+                p.drawImage(photo_image, photo_x, photo_y, width=80, height=100)
+            except:
+                # Placeholder foto
+                p.setFillColorRGB(*secondary_color)
+                p.rect(photo_x, photo_y, 80, 100, fill=True, stroke=True)
+                p.setFillColorRGB(*text_color)
+                p.setFont("Helvetica", 10)
+                p.drawCentredString(photo_x + 40, photo_y + 50, "FOTO")
+        
+        # Informazioni membro
+        info_x = 160
+        p.setFillColorRGB(*text_color)
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(info_x, y_start - 20, f"{member.first_name} {member.last_name}")
+        
+        p.setFont("Helvetica", 12)
+        p.drawString(info_x, y_start - 40, f"ID: {member.uuid}")
+        p.drawString(info_x, y_start - 60, f"Email: {member.email}")
+        p.drawString(info_x, y_start - 80, f"Telefono: {member.phone}")
+        
+        # Data inizio abbonamento
+        if member.subscription_start:
+            p.drawString(info_x, y_start - 100, f"Abbonamento dal: {member.subscription_start.strftime('%d/%m/%Y')}")
+        
+        # Certificato medico
+        cert_status = "✓ Presente" if member.medical_certificate_end else "✗ Non presente"
+        cert_color = (0, 0.6, 0) if member.medical_certificate_end else (0.8, 0, 0)
+        p.setFillColorRGB(*cert_color)
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(info_x, y_start - 120, f"Certificato Medico: {cert_status}")
+        
+        # Data scadenza abbonamento
+        if member.subscription_end:
+            p.setFillColorRGB(*text_color)
+            p.setFont("Helvetica", 12)
+            p.drawString(info_x, y_start - 140, f"Abbonamento valido fino al: {member.subscription_end.strftime('%d/%m/%Y')}")
+        
+        # Sezione QR Code
+        qr_section_y = y_start - 200
+        
+        # Titolo sezione QR
+        p.setFillColorRGB(*primary_color)
+        p.setFont("Helvetica-Bold", 16)
+        p.drawCentredString(width/2, qr_section_y, "CODICE QR PER CHECK-IN SALA")
+        
+        # QR Code grande centrato
+        if member.qr_code_image:
+            qr_size = 250
+            qr_x = (width - qr_size) / 2
+            qr_y = qr_section_y - qr_size - 30
+            
+            try:
+                qr_image = ImageReader(member.qr_code_image.path)
+                p.drawImage(qr_image, qr_x, qr_y, width=qr_size, height=qr_size)
+                
+                # Cornice QR
+                p.setStrokeColorRGB(*primary_color)
+                p.setLineWidth(3)
+                p.rect(qr_x - 5, qr_y - 5, qr_size + 10, qr_size + 10, fill=False, stroke=True)
+            except:
+                # Placeholder QR
+                p.setFillColorRGB(*secondary_color)
+                p.rect(qr_x, qr_y, qr_size, qr_size, fill=True, stroke=True)
+                p.setFillColorRGB(*text_color)
+                p.setFont("Helvetica-Bold", 16)
+                p.drawCentredString(qr_x + qr_size/2, qr_y + qr_size/2, "QR CODE")
+        
+        # UUID sotto il QR
+        p.setFillColorRGB(*text_color)
+        p.setFont("Helvetica", 10)
+        p.drawCentredString(width/2, qr_y - 20, f"ID: {member.uuid}")
+        
+        # Footer
+        footer_y = 50
+        p.setFillColorRGB(*primary_color)
+        p.setFont("Helvetica-Bold", 12)
+        p.drawCentredString(width/2, footer_y + 20, "LEVEL - Sistema di Gestione Sala")
+        
+        p.setFont("Helvetica", 10)
+        p.drawCentredString(width/2, footer_y, "Presenta questo QR code per l'accesso alla sala")
+        
+        # Data di generazione
+        from datetime import datetime
+        p.setFont("Helvetica", 8)
+        p.drawString(40, 20, f"Generato il: {datetime.now().strftime('%d/%m/%Y alle %H:%M')}")
+        
+        p.showPage()
+        p.save()
+        
+        pdf_data = buffer.getvalue()
+        buffer.close()
+        response.write(pdf_data)
+        return response
+        
+    else:  # PNG format
+        response = HttpResponse(content_type='image/png')
+        response['Content-Disposition'] = f'attachment; filename="qr_code_sala_{member.last_name}_{member.first_name}.png"'
+        
+        if member.qr_code_image:
+            with open(member.qr_code_image.path, 'rb') as f:
+                response.write(f.read())
+        
+        return response
+
+@staff_member_required
+def send_sala_qr_email(request, member_id):
+    """Invia una mail al membro di sala con il suo QR code PNG e la tessera PDF in allegato."""
+    member = get_object_or_404(SalaMember, id=member_id)
+
+    try:
+        # Assicurati che esista un'immagine del QR
+        if not member.qr_code_image:
+            member.generate_qr_code()
+            member.save()
+
+        if not member.email:
+            messages.error(request, "Il membro non ha un'email valida.")
+            return redirect(reverse('admin:gym_salamember_change', args=[member.id]))
+
+        subject = "La tua tessera e QR code - Sala LEVEL"
+        body = (
+            f"Ciao {member.first_name},\n\n"
+            "in allegato trovi:\n"
+            "- Il tuo QR code personale (PNG) per l'accesso rapido alla sala\n"
+            "- La tua tessera completa (PDF) con tutte le informazioni\n\n"
+            "Conserva entrambi i file e porta la tessera PDF stampata o il QR code sul telefono.\n\n"
+            "A presto,\nLEVEL"
+        )
+
+        email = EmailMessage(
+            subject=subject,
+            body=body,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None) or settings.EMAIL_HOST_USER,
+            to=[member.email],
+        )
+
+        # Allega il QR PNG
+        with open(member.qr_code_image.path, 'rb') as f:
+            email.attach(
+                filename=f"qr_code_sala_{member.last_name}_{member.first_name}.png",
+                content=f.read(),
+                mimetype='image/png'
+            )
+
+        # Genera e allega la tessera PDF (stesso codice della funzione download_sala_qr_code)
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+        
+        # Colori per sala (rosso)
+        primary_color = (0.8, 0.2, 0.2)  # Rosso per sala
+        secondary_color = (0.9, 0.9, 0.9)  # Grigio chiaro
+        text_color = (0.2, 0.2, 0.2)  # Grigio scuro
+        
+        # Header con sfondo colorato
+        p.setFillColorRGB(*primary_color)
+        p.rect(0, height - 100, width, 100, fill=True, stroke=False)
+        
+        # Titolo principale
+        p.setFillColorRGB(1, 1, 1)  # Bianco
+        p.setFont("Helvetica-Bold", 24)
+        p.drawCentredString(width/2, height - 40, "TESSERA SALA LEVEL")
+        
+        p.setFont("Helvetica", 14)
+        p.drawCentredString(width/2, height - 65, "Codice QR Personale")
+        
+        # Sezione informazioni membro
+        y_start = height - 140
+        
+        # Box informazioni con sfondo
+        p.setFillColorRGB(*secondary_color)
+        p.rect(40, y_start - 160, width - 80, 160, fill=True, stroke=True)
+        
+        # Foto del membro (se presente)
+        photo_x = 60
+        photo_y = y_start - 100
+        if member.photo:
+            try:
+                photo_image = ImageReader(member.photo.path)
+                p.drawImage(photo_image, photo_x, photo_y, width=80, height=100)
+            except:
+                # Placeholder foto
+                p.setFillColorRGB(*secondary_color)
+                p.rect(photo_x, photo_y, 80, 100, fill=True, stroke=True)
+                p.setFillColorRGB(*text_color)
+                p.setFont("Helvetica", 10)
+                p.drawCentredString(photo_x + 40, photo_y + 50, "FOTO")
+        
+        # Informazioni membro
+        info_x = 160
+        p.setFillColorRGB(*text_color)
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(info_x, y_start - 20, f"{member.first_name} {member.last_name}")
+        
+        p.setFont("Helvetica", 12)
+        p.drawString(info_x, y_start - 40, f"ID: {member.uuid}")
+        p.drawString(info_x, y_start - 60, f"Email: {member.email}")
+        p.drawString(info_x, y_start - 80, f"Telefono: {member.phone}")
+        
+        # Data inizio abbonamento
+        if member.subscription_start:
+            p.drawString(info_x, y_start - 100, f"Abbonamento dal: {member.subscription_start.strftime('%d/%m/%Y')}")
+        
+        # Certificato medico
+        cert_status = "✓ Presente" if member.medical_certificate_end else "✗ Non presente"
+        cert_color = (0, 0.6, 0) if member.medical_certificate_end else (0.8, 0, 0)
+        p.setFillColorRGB(*cert_color)
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(info_x, y_start - 120, f"Certificato Medico: {cert_status}")
+        
+        # Data scadenza abbonamento
+        if member.subscription_end:
+            p.setFillColorRGB(*text_color)
+            p.setFont("Helvetica", 12)
+            p.drawString(info_x, y_start - 140, f"Abbonamento valido fino al: {member.subscription_end.strftime('%d/%m/%Y')}")
+        
+        # Sezione QR Code
+        qr_section_y = y_start - 200
+        
+        # Titolo sezione QR
+        p.setFillColorRGB(*primary_color)
+        p.setFont("Helvetica-Bold", 16)
+        p.drawCentredString(width/2, qr_section_y, "CODICE QR PER CHECK-IN SALA")
+        
+        # QR Code grande centrato
+        if member.qr_code_image:
+            qr_size = 250
+            qr_x = (width - qr_size) / 2
+            qr_y = qr_section_y - qr_size - 30
+            
+            try:
+                qr_image = ImageReader(member.qr_code_image.path)
+                p.drawImage(qr_image, qr_x, qr_y, width=qr_size, height=qr_size)
+                
+                # Cornice QR
+                p.setStrokeColorRGB(*primary_color)
+                p.setLineWidth(3)
+                p.rect(qr_x - 5, qr_y - 5, qr_size + 10, qr_size + 10, fill=False, stroke=True)
+            except:
+                # Placeholder QR
+                p.setFillColorRGB(*secondary_color)
+                p.rect(qr_x, qr_y, qr_size, qr_size, fill=True, stroke=True)
+                p.setFillColorRGB(*text_color)
+                p.setFont("Helvetica-Bold", 16)
+                p.drawCentredString(qr_x + qr_size/2, qr_y + qr_size/2, "QR CODE")
+        
+        # UUID sotto il QR
+        p.setFillColorRGB(*text_color)
+        p.setFont("Helvetica", 10)
+        p.drawCentredString(width/2, qr_y - 20, f"ID: {member.uuid}")
+        
+        # Footer
+        footer_y = 50
+        p.setFillColorRGB(*primary_color)
+        p.setFont("Helvetica-Bold", 12)
+        p.drawCentredString(width/2, footer_y + 20, "LEVEL - Sistema di Gestione Sala")
+        
+        p.setFont("Helvetica", 10)
+        p.drawCentredString(width/2, footer_y, "Presenta questo QR code per l'accesso alla sala")
+        
+        # Data di generazione
+        from datetime import datetime
+        p.setFont("Helvetica", 8)
+        p.drawString(40, 20, f"Generato il: {datetime.now().strftime('%d/%m/%Y alle %H:%M')}")
+        
+        p.showPage()
+        p.save()
+        
+        pdf_data = buffer.getvalue()
+        buffer.close()
+        
+        # Allega la tessera PDF
+        email.attach(
+            filename=f"tessera_sala_{member.last_name}_{member.first_name}.pdf",
+            content=pdf_data,
+            mimetype='application/pdf'
+        )
+
+        email.send(fail_silently=False)
+        messages.success(request, f"Email inviata a {member.email} con QR code e tessera PDF.")
+    except Exception as exc:
+        messages.error(request, f"Errore nell'invio dell'email: {exc}")
+
+    return redirect(reverse('admin:gym_salamember_change', args=[member.id]))
+
+@staff_member_required
+def take_sala_photo(request, member_id):
+    """Pagina per scattare foto ai membri di sala"""
+    member = get_object_or_404(SalaMember, id=member_id)
+    return render(request, 'gym/take_sala_photo.html', {'member': member})
+
+@staff_member_required
+def save_sala_photo(request, member_id):
+    """Salva la foto scattata per il membro di sala"""
+    if request.method == 'POST':
+        member = get_object_or_404(SalaMember, id=member_id)
+        
+        try:
+            # Ottieni l'immagine dal form
+            image_data = request.POST.get('image_data')
+            if not image_data:
+                return JsonResponse({'success': False, 'message': 'Nessuna immagine ricevuta'})
+            
+            # Rimuovi il prefisso data:image/png;base64,
+            if ',' in image_data:
+                image_data = image_data.split(',')[1]
+            
+            # Decodifica l'immagine base64
+            image_bytes = base64.b64decode(image_data)
+            
+            # Crea un oggetto Image da BytesIO
+            image = Image.open(io.BytesIO(image_bytes))
+            
+            # Converti in RGB se necessario
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
+            
+            # Salva l'immagine
+            buffer = io.BytesIO()
+            image.save(buffer, format='JPEG', quality=85)
+            buffer.seek(0)
+            
+            # Salva nel campo photo del membro
+            from django.core.files import File
+            member.photo.save(f'sala_photo_{member.uuid}.jpg', File(buffer), save=True)
+            
+            return JsonResponse({'success': True, 'message': 'Foto salvata con successo!'})
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'Errore nel salvare la foto: {str(e)}'})
+    
+    return JsonResponse({'success': False, 'message': 'Metodo non consentito'})

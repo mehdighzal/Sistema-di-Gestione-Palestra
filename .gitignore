@@ -3,10 +3,18 @@ __pycache__/
 *.py[cod]
 *.sqlite3
 *.log
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
 
 # Virtual environment
 venv/
 env/
+ENV/
+env.bak/
+venv.bak/
 
 # Django
 *.pyc
@@ -14,10 +22,45 @@ db.sqlite3
 privateKey.key
 staticfiles/
 media/
+*.log
+local_settings.py
+settings_local.py
+
+# Django migrations (opzionale - rimuovi se vuoi tracciare le migrazioni)
+# */migrations/*.py
+# !*/migrations/__init__.py
 
 # IDE
 .vscode/
 *.idea/
+.DS_Store
+Thumbs.db
 
-# Secret settings (es. se hai usato file .env)
+# Secret settings
 .env
+.env.local
+.env.production
+secrets.json
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# CSV files (se non vuoi tracciare i file CSV)
+*.csv
+
+# Backup files
+*.bak
+*.backup

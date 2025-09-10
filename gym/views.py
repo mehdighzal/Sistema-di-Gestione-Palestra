@@ -466,22 +466,22 @@ def send_qr_email(request, member_id):
         p.drawString(info_x, y_start - 60, f"Email: {member.email}")
         p.drawString(info_x, y_start - 80, f"Telefono: {member.phone}")
         
-        # Data di nascita
-        if member.date_of_birth:
-            p.drawString(info_x, y_start - 100, f"Nato il: {member.date_of_birth.strftime('%d/%m/%Y')}")
+        # Data inizio abbonamento
+        if member.subscription_start:
+            p.drawString(info_x, y_start - 100, f"Abbonamento dal: {member.subscription_start.strftime('%d/%m/%Y')}")
         
         # Certificato medico
-        cert_status = "✓ Presente" if member.medical_certificate else "✗ Non presente"
-        cert_color = (0, 0.6, 0) if member.medical_certificate else (0.8, 0, 0)
+        cert_status = "✓ Presente" if member.medical_certificate_end else "✗ Non presente"
+        cert_color = (0, 0.6, 0) if member.medical_certificate_end else (0.8, 0, 0)
         p.setFillColorRGB(*cert_color)
         p.setFont("Helvetica-Bold", 12)
         p.drawString(info_x, y_start - 120, f"Certificato Medico: {cert_status}")
         
         # Data scadenza abbonamento
-        if member.subscription_end_date:
+        if member.subscription_end:
             p.setFillColorRGB(*text_color)
             p.setFont("Helvetica", 12)
-            p.drawString(info_x, y_start - 140, f"Abbonamento valido fino al: {member.subscription_end_date.strftime('%d/%m/%Y')}")
+            p.drawString(info_x, y_start - 140, f"Abbonamento valido fino al: {member.subscription_end.strftime('%d/%m/%Y')}")
         
         # Sezione QR Code
         qr_section_y = y_start - 200

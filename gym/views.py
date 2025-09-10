@@ -9,6 +9,8 @@ import base64
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core.mail import EmailMessage
+from django.conf import settings
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
@@ -361,3 +363,49 @@ def save_photo(request, member_id):
         return JsonResponse({'success': False, 'message': 'Errore nel salvare la foto'})
     
     return JsonResponse({'success': False, 'message': 'Metodo non consentito'}) 
+
+
+@staff_member_required
+def send_qr_email(request, member_id):
+    """Invia una mail al membro con il suo QR code in allegato (PNG)."""
+    member = get_object_or_404(Member, id=member_id)
+
+    try:
+        # Assicurati che esista un'immagine del QR
+        if not member.qr_code_image:
+            member.generate_qr_code()
+            member.save()
+
+        if not member.email:
+            messages.error(request, "Il membro non ha un'email valida.")
+            return redirect(reverse('admin:gym_member_change', args=[member.id]))
+
+        subject = "Il tuo QR code - Palestra LEVEL"
+        body = (
+            f"Ciao {member.first_name},\n\n"
+            "in allegato trovi il tuo QR code personale per l'accesso in palestra. "
+            "Conservalo e mostracelo all'ingresso.\n\n"
+            "A presto,\nLEVEL"
+        )
+
+        email = EmailMessage(
+            subject=subject,
+            body=body,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None) or settings.EMAIL_HOST_USER,
+            to=[member.email],
+        )
+
+        # Allega il QR PNG
+        with open(member.qr_code_image.path, 'rb') as f:
+            email.attach(
+                filename=f"qr_code_{member.last_name}_{member.first_name}.png",
+                content=f.read(),
+                mimetype='image/png'
+            )
+
+        email.send(fail_silently=False)
+        messages.success(request, f"Email inviata a {member.email}.")
+    except Exception as exc:
+        messages.error(request, f"Errore nell'invio dell'email: {exc}")
+
+    return redirect(reverse('admin:gym_member_change', args=[member.id]))

@@ -22,7 +22,9 @@ class Member(models.Model):
     phone = models.CharField(
         max_length=15,
         validators=[RegexValidator(regex=r'^\+?1?\d{9,15}$')],
-        verbose_name="Telefono"
+        verbose_name="Telefono",
+        null=True,
+        blank=True
     )
     subscription_start = models.DateField(verbose_name="Data inizio abbonamento")
     subscription_end = models.DateField(verbose_name="Data fine abbonamento")

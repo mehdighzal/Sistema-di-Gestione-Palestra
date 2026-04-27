@@ -1,6 +1,6 @@
 # LEVEL - Sistema di Gestione Palestra
 
-Un'applicazione Django completa per la gestione di una palestra locale con sistema di check-in/check-out tramite QR code e integrazione con wallet digitali.
+Un'applicazione Django completa per la gestione di una palestra locale con sistema di check-in/check-out tramite QR code.
 
 ## 🏋️ Caratteristiche Principali
 
@@ -26,18 +26,12 @@ Un'applicazione Django completa per la gestione di una palestra locale con siste
 - **Auto-redirect**: Ritorno automatico alla home dopo 20 secondi
 - **Modalità Kiosk**: Ottimizzata per tablet a schermo intero
 
-### Wallet Digitali
-- **Apple Wallet**: Generazione di .pkpass files
-- **Google Wallet**: Integrazione con Google Pay API
-- **Dettagli Pass**: Nome utente, validità abbonamento, logo palestra
-
 ## 🛠️ Tecnologie Utilizzate
 
 - **Backend**: Django 5.2.3 (Python)
 - **Database**: SQLite (locale)
 - **Frontend**: Django Templates + Bootstrap 5 + Font Awesome
 - **QR Code**: `qrcode` (generazione) + `html5-qrcode` (scansione)
-- **Wallet**: `applepassgenerator` (Apple Wallet)
 - **Immagini**: Pillow (PIL)
 - **Validazione**: `python-dateutil`, `cryptography`
 
@@ -118,35 +112,6 @@ python manage.py runserver
 - subscription_status: CharField (choices: attivo/scaduto)
 ```
 
-## 🔧 Configurazione Wallet Pass
-
-### Apple Wallet
-1. **Certificati Richiesti**:
-   - `pass.pem`: Certificato pass
-   - `pass.key`: Chiave privata
-   - `wwdr.pem`: Certificato WWDR
-
-2. **Directory Struttura**:
-   ```
-   certificates/
-   ├── pass.pem
-   ├── pass.key
-   └── wwdr.pem
-   ```
-
-3. **Immagini Richieste**:
-   ```
-   static/wallet/
-   ├── icon.png (29x29)
-   ├── icon@2x.png (58x58)
-   ├── logo.png (160x50)
-   └── logo@2x.png (320x100)
-   ```
-
-### Google Wallet
-- Configurazione tramite Google Pay API
-- Generazione di JSON per Smart Pass
-
 ## 📱 Funzionalità Avanzate
 
 ### Gestione Abbonamenti Scaduti
@@ -205,7 +170,7 @@ python manage.py runserver
 
 ## 📄 Licenza
 
-Progetto didattico per apprendimento Django, QR code e integrazione wallet digitali.
+Progetto didattico per apprendimento Django e QR code.
 
 ## 👥 Contributi
 

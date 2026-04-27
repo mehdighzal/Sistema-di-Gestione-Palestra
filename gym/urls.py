@@ -12,8 +12,6 @@ urlpatterns = [
     path('send-qr-email/<int:member_id>/', views.send_qr_email, name='send_qr_email'),
     path('take-photo/<int:member_id>/', views.take_photo, name='take_photo'),
     path('save-photo/<int:member_id>/', views.save_photo, name='save_photo'),
-    path('wallet-pass/<str:member_uuid>/', views.generate_wallet_pass, name='generate_wallet_pass'),
-    path('wallet/', views.wallet, name='wallet'),
     
     # URL per membri di sala
     path('sala-member/<int:member_id>/qr/', views.generate_sala_qr, name='generate_sala_qr'),

@@ -7,8 +7,13 @@
 <style>
     #reader {
         width: 100%;
-        max-width: 600px;
+        max-width: 900px;
         margin: 0 auto;
+    }
+    /* Mirror camera preview horizontally (right/left flip). */
+    #reader video,
+    #reader canvas {
+        transform: scaleX(-1);
     }
     .back-button {
         position: absolute;
@@ -16,16 +21,17 @@
         left: 1rem;
     }
     .scan-container {
-        max-width: 600px;
+        max-width: 960px;
         margin: 0 auto;
-        padding: 2rem;
+        padding: 1.5rem;
     }
     .scan-title {
         margin-bottom: 2rem;
     }
     @media (max-width: 768px) {
         .scan-container {
-            padding: 1rem;
+            max-width: 100%;
+            padding: 0.75rem;
         }
     }
 </style>
@@ -83,12 +89,17 @@
 
     function startScanner() {
         document.getElementById('reader').innerHTML = '';
+        const qrSize = Math.max(300, Math.min(Math.floor(window.innerWidth * 0.9), 620));
         html5QrcodeScanner = new Html5QrcodeScanner(
             "reader",
             { 
                 fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
+                qrbox: { width: qrSize, height: qrSize },
+                aspectRatio: 1.0,
+                disableFlip: false,
+                videoConstraints: {
+                    facingMode: { ideal: "environment" }
+                }
             }
         );
         html5QrcodeScanner.render(onScanSuccess, onScanFailure);

@@ -15,7 +15,6 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
 from PIL import Image
-# from .wallet import WalletPassGenerator
 
 def home(request):
     """Home page with scan button"""
@@ -336,35 +335,6 @@ def download_qr_code(request, member_id):
                 response.write(f.read())
         
         return response
-
-@require_http_methods(["GET"])
-def generate_wallet_pass(request, member_uuid):
-    try:
-        member = Member.objects.get(uuid=member_uuid)
-        # generator = WalletPassGenerator(member)
-        pass_type = request.GET.get("type", "apple")
-
-        if pass_type == "apple":
-            pass_json = generator.generate_apple_pass()
-            response = HttpResponse(pass_json, content_type="application/vnd.apple.pkpass")
-            response["Content-Disposition"] = f"attachment; filename=pass.pkpass"
-            return response
-        elif pass_type == "google":
-            pass_json = generator.generate_google_pass()
-            return JsonResponse(pass_json)
-        else:
-            return HttpResponse("Invalid pass type", status=400)
-    except Member.DoesNotExist:
-        return HttpResponse("Member not found", status=404)
-    except Exception as e:
-        return HttpResponse(f"Error generating pass: {e}", status=500)
-
-@require_http_methods(["GET"])
-def wallet(request):
-    member = Member.objects.first()
-    if not member:
-        return HttpResponse("Nessun membro trovato.", status=404)
-    return render(request, "gym/wallet.html", { "member_uuid": member.uuid }) 
 
 @staff_member_required
 def take_photo(request, member_id):

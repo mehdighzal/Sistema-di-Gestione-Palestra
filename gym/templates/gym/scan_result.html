@@ -1,22 +1,111 @@
 {% extends 'base.html' %}
-{% block title %}Risultato Scansione{% endblock %}
+{% block title %}LEVEL - Risultato Scansione{% endblock %}
+{% block extra_css %}
+<style>
+    .result-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    .result-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+    .result-message {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .member-info {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+    }
+    .member-photo {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #007bff;
+        margin-bottom: 1rem;
+    }
+    .action-buttons {
+        margin-top: 2rem;
+    }
+    .btn-action {
+        padding: 1rem 2rem;
+        font-size: 1.2rem;
+        margin: 0.5rem;
+        min-width: 200px;
+    }
+    @media (max-width: 768px) {
+        .btn-action {
+            width: 100%;
+            margin: 0.5rem 0;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container text-center mt-5">
-    <h2>Risultato Scansione</h2>
-    {% if member_uuid %}
-         <p>Membro trovato (UUID: {{ member_uuid }}).</p>
-         <p>Premi uno dei pulsanti sottostanti per aggiungere la tessera a Apple Wallet o Google Wallet:</p>
-         <a href="{% url 'gym:generate_wallet_pass' member_uuid %}?type=apple" class="btn btn-dark btn-lg mb-3">
-             <img src="https://developer.apple.com/design/human-interface-guidelines/apple-pay/images/apple-pay-mark-apple-logo_2x.png" alt="Apple Wallet" style="height:1.5em;vertical-align:middle;"> Aggiungi a Apple Wallet
-         </a>
-         <br>
-         <a href="{% url 'gym:generate_wallet_pass' member_uuid %}?type=google" class="btn btn-success btn-lg">
-             <img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/Google_Pay_Logo.svg" alt="Google Wallet" style="height:1.5em;vertical-align:middle;"> Aggiungi a Google Wallet
-         </a>
+<div class="result-container text-center">
+    {% if status == 'success' %}
+        <div class="result-icon text-success">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="result-message text-success">
+            {{ message }}
+        </div>
+        {% if member %}
+        <div class="member-info">
+            <h3>{{ member.first_name }} {{ member.last_name }}</h3>
+            <p class="mb-1">
+                <strong>Abbonamento:</strong><br>
+                {{ member.subscription_start|date:"d/m/Y" }} - {{ member.subscription_end|date:"d/m/Y" }}
+            </p>
+            <p class="mb-0">
+                <strong>Giorni rimanenti:</strong> {{ member.days_remaining }}
+            </p>
+            {% if member.photo %}
+                <img src="{{ member.photo.url }}" alt="Foto del membro" class="member-photo">
+            {% endif %}
+        </div>
+        {% endif %}
     {% else %}
-         <p>Nessun membro trovato.</p>
+        <div class="result-icon text-danger">
+            <i class="fas fa-times-circle"></i>
+        </div>
+        <div class="result-message text-danger">
+            {{ message }}
+        </div>
+        {% if member %}
+        <div class="member-info">
+            <h3>{{ member.first_name }} {{ member.last_name }}</h3>
+            <p class="mb-1">
+                <strong>Abbonamento scaduto il:</strong><br>
+                {{ member.subscription_end|date:"d/m/Y" }}
+            </p>
+        </div>
+        {% endif %}
     {% endif %}
-    <br>
-    <a href="{% url 'gym:scan' %}" class="btn btn-primary">Scansiona di nuovo</a>
+
+    <div class="action-buttons">
+        <a href="{% url 'gym:scan' %}" class="btn btn-primary btn-action">
+            <i class="fas fa-qrcode me-2"></i>Scansiona di nuovo
+        </a>
+        <a href="{% url 'gym:home' %}" class="btn btn-secondary btn-action">
+            <i class="fas fa-home me-2"></i>Torna alla home
+        </a>
+    </div>
 </div>
-{% endblock %} 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    setTimeout(function() {
+        window.location.href = "{% url 'gym:home' %}";
+    }, 20000);
+</script>
+{% endblock %}

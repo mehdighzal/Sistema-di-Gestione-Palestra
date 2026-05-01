@@ -60,6 +60,7 @@ class Member(models.Model):
         blank=True,
         verbose_name="Iscrizione pagata fino al"
     )
+    note = models.TextField(blank=True, default="", verbose_name="Nota")
 
     class Meta:
         verbose_name = "Membro"
@@ -263,6 +264,7 @@ class SalaMember(models.Model):
         blank=True,
         verbose_name="Iscrizione pagata fino al"
     )
+    note = models.TextField(blank=True, default="", verbose_name="Nota")
 
     class Meta:
         verbose_name = "Membro Sala"

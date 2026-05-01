@@ -70,6 +70,11 @@
             <p class="mb-0">
                 <strong>Giorni rimanenti:</strong> {{ member.days_remaining }}
             </p>
+            {% if member.note %}
+            <p class="mb-0 mt-2">
+                <strong>Nota:</strong> {{ member.note }}
+            </p>
+            {% endif %}
             {% if member.photo %}
                 <img src="{{ member.photo.url }}" alt="Foto del membro" class="member-photo">
             {% endif %}
@@ -89,6 +94,11 @@
                 <strong>Abbonamento scaduto il:</strong><br>
                 {{ member.subscription_end|date:"d/m/Y" }}
             </p>
+            {% if member.note %}
+            <p class="mb-0 mt-2">
+                <strong>Nota:</strong> {{ member.note }}
+            </p>
+            {% endif %}
         </div>
         {% endif %}
     {% endif %}

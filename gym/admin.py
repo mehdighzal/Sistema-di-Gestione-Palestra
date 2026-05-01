@@ -5,7 +5,7 @@ from .models import Member, CheckInOut, SalaMember, SalaCheckInOut
 
 @admin.register(Member)
 class MemberAdmin(admin.ModelAdmin):
-    list_display = ('last_name', 'first_name', 'email', 'phone', 'subscription_status', 'days_remaining', 'medical_certificate_status_colored', 'medical_certificate_days_remaining', 'registration_fee_status_colored', 'registration_fee_paid_until', 'photo_preview', 'take_photo_button', 'payment_type', 'receipt_number', 'qr_code_preview', 'download_qr_buttons', 'send_qr_email_button')
+    list_display = ('last_name', 'first_name', 'email', 'phone', 'subscription_status', 'days_remaining', 'medical_certificate_status_colored', 'medical_certificate_days_remaining', 'registration_fee_status_colored', 'registration_fee_paid_until', 'note', 'photo_preview', 'take_photo_button', 'payment_type', 'receipt_number', 'qr_code_preview', 'download_qr_buttons', 'send_qr_email_button')
     list_filter = ('subscription_start', 'subscription_end', 'medical_certificate_start', 'medical_certificate_end', 'payment_type', 'created_at')
     search_fields = ('first_name', 'last_name', 'email', 'phone')
     readonly_fields = ('uuid', 'qr_code_preview', 'photo_preview', 'take_photo_button', 'download_qr_buttons', 'created_at', 'updated_at')
@@ -23,6 +23,9 @@ class MemberAdmin(admin.ModelAdmin):
         }),
         ('Iscrizione annuale (20€)', {
             'fields': ('registration_fee_paid_until',)
+        }),
+        ('Nota', {
+            'fields': ('note',)
         }),
         ('Sistema', {
             'fields': ('uuid', 'qr_code_preview', 'download_qr_buttons'),
@@ -140,7 +143,7 @@ class CheckInOutAdmin(admin.ModelAdmin):
 
 @admin.register(SalaMember)
 class SalaMemberAdmin(admin.ModelAdmin):
-    list_display = ('last_name', 'first_name', 'email', 'phone', 'subscription_status', 'days_remaining', 'medical_certificate_status_colored', 'medical_certificate_days_remaining', 'registration_fee_status_colored', 'registration_fee_paid_until', 'photo_preview', 'take_photo_button', 'payment_type', 'receipt_number', 'qr_code_preview', 'download_qr_buttons', 'send_qr_email_button')
+    list_display = ('last_name', 'first_name', 'email', 'phone', 'subscription_status', 'days_remaining', 'medical_certificate_status_colored', 'medical_certificate_days_remaining', 'registration_fee_status_colored', 'registration_fee_paid_until', 'note', 'photo_preview', 'take_photo_button', 'payment_type', 'receipt_number', 'qr_code_preview', 'download_qr_buttons', 'send_qr_email_button')
     list_filter = ('subscription_start', 'subscription_end', 'medical_certificate_start', 'medical_certificate_end', 'payment_type', 'created_at')
     search_fields = ('first_name', 'last_name', 'email', 'phone')
     readonly_fields = ('uuid', 'qr_code_preview', 'photo_preview', 'take_photo_button', 'download_qr_buttons', 'created_at', 'updated_at')
@@ -158,6 +161,9 @@ class SalaMemberAdmin(admin.ModelAdmin):
         }),
         ('Iscrizione annuale (20€)', {
             'fields': ('registration_fee_paid_until',)
+        }),
+        ('Nota', {
+            'fields': ('note',)
         }),
         ('Sistema', {
             'fields': ('uuid', 'qr_code_preview', 'download_qr_buttons'),

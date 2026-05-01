@@ -264,6 +264,12 @@ class SalaMember(models.Model):
         blank=True,
         verbose_name="Iscrizione pagata fino al"
     )
+    course_type = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="Tipo di corso",
+    )
     note = models.TextField(blank=True, default="", verbose_name="Nota")
 
     class Meta:

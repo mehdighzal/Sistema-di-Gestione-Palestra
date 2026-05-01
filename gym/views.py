@@ -137,17 +137,17 @@ def generate_qr(request, member_id):
         box_size=10,
         border=4,
     )
-    qr.add_data(member.qr_code)
+    qr.add_data(str(member.uuid))
     qr.make(fit=True)
-    
+
     # Create QR code image
     img = qr.make_image(fill_color="black", back_color="white")
-    
+
     # Convert to base64 for display
     buffer = io.BytesIO()
     img.save(buffer, format='PNG')
     qr_image = base64.b64encode(buffer.getvalue()).decode()
-    
+
     return render(request, 'gym/qr_code.html', {
         'member': member,
         'qr_image': qr_image
@@ -574,17 +574,17 @@ def generate_sala_qr(request, member_id):
         box_size=10,
         border=4,
     )
-    qr.add_data(member.qr_code)
+    qr.add_data(str(member.uuid))
     qr.make(fit=True)
-    
+
     # Create QR code image
     img = qr.make_image(fill_color="black", back_color="white")
-    
+
     # Convert to base64 for display
     buffer = io.BytesIO()
     img.save(buffer, format='PNG')
     qr_image = base64.b64encode(buffer.getvalue()).decode()
-    
+
     context = {
         'member': member,
         'qr_image': qr_image

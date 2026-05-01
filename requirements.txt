@@ -5,6 +5,7 @@ Pillow==10.2.0  # Required for QR code generation
 python-dateutil==2.8.2
 cryptography>=41.0.0
 reportlab>=4.0.0
+openpyxl>=3.1.0
 
 # The pass signing functionality is provided by the cryptography package.
 # Keep this version modern for security fixes unless a dependency

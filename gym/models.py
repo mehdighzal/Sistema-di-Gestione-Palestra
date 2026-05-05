@@ -44,7 +44,7 @@ class Member(models.Model):
         ('contanti', 'Contanti'),
     ]
     payment_type = models.CharField(
-        max_length=10,
+        max_length=64,
         choices=PAYMENT_CHOICES,
         default='carta',
         verbose_name="Tipo di Pagamento"
@@ -176,12 +176,12 @@ class CheckInOut(models.Model):
         ('scaduto', 'Scaduto'),
     ]
     subscription_status = models.CharField(
-        max_length=10,
+        max_length=64,
         choices=SUBSCRIPTION_STATUS_CHOICES,
         default='attivo',
         verbose_name="Stato Abbonamento al Check-in"
     )
-    
+
     class Meta:
         verbose_name = "Accesso"
         verbose_name_plural = "Accessi"
@@ -248,7 +248,7 @@ class SalaMember(models.Model):
         ('contanti', 'Contanti'),
     ]
     payment_type = models.CharField(
-        max_length=10,
+        max_length=64,
         choices=PAYMENT_CHOICES,
         default='carta',
         verbose_name="Tipo di Pagamento"
@@ -387,12 +387,12 @@ class SalaCheckInOut(models.Model):
         ('scaduto', 'Scaduto'),
     ]
     subscription_status = models.CharField(
-        max_length=10,
+        max_length=64,
         choices=SUBSCRIPTION_STATUS_CHOICES,
         default='attivo',
         verbose_name="Stato Abbonamento al Check-in"
     )
-    
+
     class Meta:
         verbose_name = "Accesso Sala"
         verbose_name_plural = "Accessi Sala"

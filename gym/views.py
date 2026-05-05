@@ -16,6 +16,15 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
 from PIL import Image
 
+def ensure_qr_image(member):
+    """Ensure QR ImageField points to an existing file on this machine's storage."""
+    has_file = bool(member.qr_code_image)
+    file_exists = has_file and member.qr_code_image.storage.exists(member.qr_code_image.name)
+    if not file_exists:
+        member.generate_qr_code()
+        member.save(update_fields=['qr_code_image'])
+        member.refresh_from_db(fields=['qr_code_image'])
+
 def home(request):
     """Home page with scan button"""
     return render(request, 'gym/home.html')
@@ -159,10 +168,7 @@ def download_qr_code(request, member_id):
     member = get_object_or_404(Member, id=member_id)
     format_type = request.GET.get('format', 'png').lower()
     
-    if not member.qr_code_image:
-        # Generate QR code if not exists
-        member.generate_qr_code()
-        member.save()
+    ensure_qr_image(member)
     
     if format_type == 'pdf':
         # Create PDF with QR code
@@ -329,11 +335,9 @@ def download_qr_code(request, member_id):
     else:  # PNG format
         response = HttpResponse(content_type='image/png')
         response['Content-Disposition'] = f'attachment; filename="qr_code_{member.last_name}_{member.first_name}.png"'
-        
         if member.qr_code_image:
-            with open(member.qr_code_image.path, 'rb') as f:
+            with member.qr_code_image.open('rb') as f:
                 response.write(f.read())
-        
         return response
 
 @staff_member_required
@@ -379,9 +383,7 @@ def send_qr_email(request, member_id):
 
     try:
         # Assicurati che esista un'immagine del QR
-        if not member.qr_code_image:
-            member.generate_qr_code()
-            member.save()
+        ensure_qr_image(member)
 
         if not member.email:
             messages.error(request, "Il membro non ha un'email valida.")
@@ -405,12 +407,13 @@ def send_qr_email(request, member_id):
         )
 
         # Allega il QR PNG
-        with open(member.qr_code_image.path, 'rb') as f:
-            email.attach(
-                filename=f"qr_code_{member.last_name}_{member.first_name}.png",
-                content=f.read(),
-                mimetype='image/png'
-            )
+        if member.qr_code_image and member.qr_code_image.storage.exists(member.qr_code_image.name):
+            with open(member.qr_code_image.path, 'rb') as f:
+                email.attach(
+                    filename=f"qr_code_{member.last_name}_{member.first_name}.png",
+                    content=f.read(),
+                    mimetype='image/png'
+                )
 
         # Genera e allega la tessera PDF
         from reportlab.pdfgen import canvas
@@ -598,10 +601,7 @@ def download_sala_qr_code(request, member_id):
     member = get_object_or_404(SalaMember, id=member_id)
     format_type = request.GET.get('format', 'png').lower()
     
-    if not member.qr_code_image:
-        # Generate QR code if not exists
-        member.generate_qr_code()
-        member.save()
+    ensure_qr_image(member)
     
     if format_type == 'pdf':
         # Create PDF with QR code
@@ -741,7 +741,7 @@ def download_sala_qr_code(request, member_id):
         response = HttpResponse(content_type='image/png')
         response['Content-Disposition'] = f'attachment; filename="qr_code_sala_{member.last_name}_{member.first_name}.png"'
         
-        if member.qr_code_image:
+        if member.qr_code_image and member.qr_code_image.storage.exists(member.qr_code_image.name):
             with open(member.qr_code_image.path, 'rb') as f:
                 response.write(f.read())
         
@@ -754,9 +754,7 @@ def send_sala_qr_email(request, member_id):
 
     try:
         # Assicurati che esista un'immagine del QR
-        if not member.qr_code_image:
-            member.generate_qr_code()
-            member.save()
+        ensure_qr_image(member)
 
         if not member.email:
             messages.error(request, "Il membro non ha un'email valida.")
@@ -780,12 +778,13 @@ def send_sala_qr_email(request, member_id):
         )
 
         # Allega il QR PNG
-        with open(member.qr_code_image.path, 'rb') as f:
-            email.attach(
-                filename=f"qr_code_sala_{member.last_name}_{member.first_name}.png",
-                content=f.read(),
-                mimetype='image/png'
-            )
+        if member.qr_code_image and member.qr_code_image.storage.exists(member.qr_code_image.name):
+            with open(member.qr_code_image.path, 'rb') as f:
+                email.attach(
+                    filename=f"qr_code_sala_{member.last_name}_{member.first_name}.png",
+                    content=f.read(),
+                    mimetype='image/png'
+                )
 
         # Genera e allega la tessera PDF (stesso codice della funzione download_sala_qr_code)
         buffer = io.BytesIO()

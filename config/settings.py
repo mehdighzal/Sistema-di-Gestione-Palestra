@@ -37,8 +37,9 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '10.0.50.14',
+    '192.168.0.106',
     'level.local'
-] + [f'172.19.{i}.{j}' for i in range(0, 256) for j in range(1, 256)] \
+] + [f'192.168.{i}.{j}' for i in range(0, 256) for j in range(1, 256)] \
   + [f'172.20.{i}.{j}' for i in range(0, 256) for j in range(1, 256)]
 
 

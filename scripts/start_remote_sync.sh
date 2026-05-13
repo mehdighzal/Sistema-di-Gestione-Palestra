@@ -132,6 +132,10 @@ else
   if ! ssh -f -N \
     -L "${LOCAL_FORWARD_PORT}:${REMOTE_DB_HOST}:${REMOTE_DB_PORT}" \
     -o ExitOnForwardFailure=yes \
+    -o TCPKeepAlive=yes \
+    -o ServerAliveInterval=30 \
+    -o ServerAliveCountMax=3 \
+    -o ConnectTimeout=10 \
     "${REMOTE_USER}@${REMOTE_HOST}"; then
     echo ""
     echo "ERROR: SSH tunnel failed. If you see 'Address already in use':"
@@ -153,4 +157,18 @@ activate_venv
 python manage.py shell -c "from django.db import connection; c=connection.cursor(); c.execute('select 1'); print('DB OK:', c.fetchone()[0])"
 
 echo "==> Starting Django server on 0.0.0.0:8000"
-python manage.py runserver 0.0.0.0:8000
+ROOT_CERT_FILE="${PROJECT_DIR}/cert.pem"
+ROOT_KEY_FILE="${PROJECT_DIR}/key.pem"
+CONFIG_CERT_FILE="${PROJECT_DIR}/config/cert.pem"
+CONFIG_KEY_FILE="${PROJECT_DIR}/config/key.pem"
+
+if [[ -f "${ROOT_CERT_FILE}" && -f "${ROOT_KEY_FILE}" ]]; then
+  echo "==> Using HTTPS certs from project root (cert.pem/key.pem)"
+  python manage.py runserver_plus --cert-file "${ROOT_CERT_FILE}" --key-file "${ROOT_KEY_FILE}" 0.0.0.0:8000
+elif [[ -f "${CONFIG_CERT_FILE}" && -f "${CONFIG_KEY_FILE}" ]]; then
+  echo "==> Using HTTPS certs from config/ (config/cert.pem, config/key.pem)"
+  python manage.py runserver_plus --cert-file "${CONFIG_CERT_FILE}" --key-file "${CONFIG_KEY_FILE}" 0.0.0.0:8000
+else
+  echo "==> HTTPS cert files not found, starting plain runserver"
+  python manage.py runserver 0.0.0.0:8000
+fi
